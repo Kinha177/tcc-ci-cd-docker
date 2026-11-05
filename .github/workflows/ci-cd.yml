@@ -22,7 +22,7 @@ jobs:
       - name: 3. Build - Construcao da Imagem Docker
         run: |
           echo "Construindo imagem Docker com cache de camadas..."
-          docker compose build
+          docker compose -p tcc-lab build
 
       - name: 4. Analysis (DevSecOps) - Scan de Vulnerabilidades e IaC (Trivy)
         run: |
@@ -33,7 +33,7 @@ jobs:
       - name: 5. Deploy (CD) - Implantacao Automatizada nos Conteineres
         run: |
           echo "Atualizando conteineres em producao..."
-          docker compose up -d
+          docker compose -p tcc-lab up -d --force-recreate
 
       - name: 6. Monitoramento - Healthcheck Pos-Deploy
         run: |
