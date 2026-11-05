@@ -1,0 +1,46 @@
+name: Pipeline CI/CD - TCC Sistemas de Informacao
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  ci-cd-pipeline:
+    name: Build, Test, Security & Deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: 1. Source - Checkout do Codigo
+        uses: actions/checkout@v4
+
+      - name: 2. Test (CI) - Validacao de Sintaxe PHP (Lint)
+        run: |
+          echo "Executando testes de sintaxe em contêiner efêmero..."
+          docker run --rm -v "${GITHUB_WORKSPACE}/app:/app" php:8.2-cli-alpine sh -c "find /app -name '*.php' -print0 | xargs -0 -n1 php -l"
+
+      - name: 3. Build - Construcao da Imagem Docker
+        run: |
+          echo "Construindo imagem Docker com cache de camadas..."
+          docker compose build
+
+      - name: 4. Analysis (DevSecOps) - Scan de Vulnerabilidades (Trivy)
+        run: |
+          echo "Executando analise de seguranca na imagem tcc-app:latest..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL --no-progress tcc-app:latest
+
+      - name: 5. Deploy (CD) - Implantacao Automatizada nos Conteineres
+        run: |
+          echo "Atualizando conteineres em producao..."
+          docker compose up -d
+
+      - name: 6. Monitoramento - Healthcheck Pos-Deploy
+        run: |
+          sleep 2
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8085)
+          echo "HTTP Status retornado pelo Nginx: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Falha no Healthcheck! Status diferente de 200."
+            exit 1
+          fi
+          curl -s http://localhost:8085
