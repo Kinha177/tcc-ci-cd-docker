@@ -16,7 +16,7 @@ jobs:
 
       - name: 2. Test (CI) - Validacao de Sintaxe PHP (Lint)
         run: |
-          echo "Executando testes de sintaxe em contêiner efêmero..."
+          echo "Executando testes de sintaxe em conteiner efemero..."
           docker run --rm -v "${GITHUB_WORKSPACE}/app:/app" php:8.2-cli-alpine sh -c "find /app -name '*.php' -print0 | xargs -0 -n1 php -l"
 
       - name: 3. Build - Construcao da Imagem Docker
@@ -24,10 +24,11 @@ jobs:
           echo "Construindo imagem Docker com cache de camadas..."
           docker compose build
 
-      - name: 4. Analysis (DevSecOps) - Scan de Vulnerabilidades (Trivy)
+      - name: 4. Analysis (DevSecOps) - Scan de Vulnerabilidades e IaC (Trivy)
         run: |
-          echo "Executando analise de seguranca na imagem tcc-app:latest..."
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL --no-progress tcc-app:latest
+          echo "Executando analise SAST/IaC e de vulnerabilidades com Trivy..."
+          trivy config --exit-code 0 --severity HIGH,CRITICAL .
+          trivy fs --scanners vuln,misconfig --exit-code 0 --severity HIGH,CRITICAL .
 
       - name: 5. Deploy (CD) - Implantacao Automatizada nos Conteineres
         run: |
